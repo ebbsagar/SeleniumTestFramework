@@ -1,6 +1,7 @@
 package com.orangehrm.actiondriver;
 
 import com.orangehrm.base.BaseClass;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.By;
 import org.openqa.selenium.JavascriptExecutor;
 import org.openqa.selenium.WebDriver;
@@ -14,12 +15,13 @@ public class ActionDriver {
 
    private WebDriver driver;
    private WebDriverWait wait;
+   public static final Logger logger = BaseClass.logger;
 
    public ActionDriver(WebDriver driver){
        this.driver=driver;
        int explicitWait = Integer.parseInt(BaseClass.getProp().getProperty("explicitWait"));
        this.wait = new WebDriverWait(driver , Duration.ofSeconds(explicitWait));
-       System.out.println("Driver is created");
+       logger.info("Driver is created");
    }
       // Wait for elements to be clickable
     private void waitForElementToBeClickable(By by){
@@ -46,8 +48,9 @@ public class ActionDriver {
         try {
             waitForElementToBeClickable(by);
             driver.findElement(by).click();
+            logger.info("Element clicked: ");
         } catch (Exception e) {
-            System.out.println("Unable to click element: " +e.getMessage());
+           logger.error("Unable to click element: " +e.getMessage());
         }
 
     }
@@ -59,8 +62,9 @@ public class ActionDriver {
             WebElement element = driver.findElement(by);
             element.clear();
             element.sendKeys(value);
+            logger.info("Value entered: {}", value);
         } catch (Exception e) {
-            System.out.println("Unable to send keys to input field: " +e.getMessage());
+            logger.error("Unable to send keys to input field: {}", e.getMessage());
         }
 
     }
@@ -71,7 +75,7 @@ public class ActionDriver {
             waitForElementToBeVisible(by);
             return driver.findElement(by).getText();
         } catch (Exception e) {
-            System.out.print("Unable to get text :" +e.getMessage());
+            logger.error("Unable to get text :{}", e.getMessage());
             return "";
         }
     }
@@ -83,15 +87,15 @@ public class ActionDriver {
             waitForElementToBeVisible(by);
             String actualText= driver.findElement(by).getText();
             if(expectedText.equals(actualText)) {
-                System.out.print("Text are matching:" +actualText+ "equals" +expectedText);
+                logger.info("Text are matching:" +actualText+ "equals" +expectedText);
                 return true;
             }
             else {
-                System.out.print("Text are not matching:" +actualText+ " not equals " +expectedText);
+                logger.info("Text are not matching:" +actualText+ " not equals " +expectedText);
                 return false;
             }
         } catch (Exception e) {
-            System.out.println("Unable to do string compare" +e.getMessage());
+           logger.error("Unable to do string compare" +e.getMessage());
         }
         return false;
     }
@@ -102,7 +106,7 @@ public class ActionDriver {
             waitForElementToBeVisible(by);
             return driver.findElement(by).isDisplayed();
         } catch (Exception e) {
-            System.out.println("Element is not displayed" +e.getMessage());
+           logger.error("Element is not displayed" +e.getMessage());
             return false;
         }
 
@@ -112,9 +116,9 @@ public class ActionDriver {
         try {
             wait.withTimeout(Duration.ofSeconds(timeOutInSec)).until(WebDriver -> ((JavascriptExecutor) driver)
                     .executeScript("return document.readyState").equals("complete"));
-            System.out.println("Page loaded successfully.");
+            logger.info("Page loaded successfully.");
         } catch (Exception e) {
-            System.out.println("Page didn't load within " +timeOutInSec+ "seconds. Exception : "+e.getMessage());
+           logger.error("Page didn't load within " +timeOutInSec+ "seconds. Exception : "+e.getMessage());
         }
 
     }
@@ -126,7 +130,7 @@ public class ActionDriver {
             WebElement element = driver.findElement(by);
             js.executeScript("arguments[0],scrollIntoView(true);", element);
         } catch (Exception e) {
-            System.out.println("Unable to locate element to scroll into view" +e.getMessage());
+           logger.error("Unable to locate element to scroll into view" +e.getMessage());
         }
     }
 }

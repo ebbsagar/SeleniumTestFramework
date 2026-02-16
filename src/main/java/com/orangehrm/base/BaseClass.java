@@ -1,6 +1,8 @@
 package com.orangehrm.base;
 
 import com.orangehrm.actiondriver.ActionDriver;
+import com.orangehrm.utilities.LoggerManager;
+import org.apache.logging.log4j.Logger;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.firefox.FirefoxDriver;
@@ -22,6 +24,7 @@ public class BaseClass {
     protected static Properties prop;
     protected static WebDriver driver;
     private static ActionDriver actionDriver;
+    public static final Logger logger = LoggerManager.getLogger(BaseClass.class);
 
 //    public  WebDriver getDriver() {
 //        return driver;
@@ -63,8 +66,9 @@ public class BaseClass {
     public void loadConfig() throws IOException {
 
         prop = new Properties();
-        FileInputStream fis = new FileInputStream("src/main/resources/config.properties");
+        FileInputStream fis = new FileInputStream(System.getProperty("user.dir")+"/src/main/resources/config.properties");
         prop.load(fis);
+        logger.info("config.prop file loaded");
 
     }
 
@@ -75,12 +79,17 @@ public class BaseClass {
         launchBrowser();
         configureBrowser();
         staticWait(2);
+        logger.info("Webdriver initiated and window maximized");
+        logger.trace("Trace message");
+        logger.error("error message");
+        logger.debug("debug message");
+        logger.fatal("fatal message");
+        logger.warn("warn message");
 
-        actionDriver = new ActionDriver(driver);
     // Initialize the action driver only once
         if (actionDriver == null){
-
-            System.out.println("Action Driver instance is created");
+            actionDriver = new ActionDriver(driver);
+           logger.info("Action Driver instance is created");
 
         }
 
@@ -93,8 +102,10 @@ public class BaseClass {
 
         if (browser.equalsIgnoreCase("chrome")) {
             driver = new ChromeDriver();
+            logger.info("Chrome driver instance is created");
         } else if (browser.equalsIgnoreCase("firefox")) {
             driver = new FirefoxDriver();
+            logger.info("Firefox driver instance is created");
         } else {
             throw new IllegalArgumentException("incorrect browser selected");
         }
@@ -122,10 +133,10 @@ public class BaseClass {
             try {
                 driver.quit();
             } catch (Exception e) {
-                System.out.println("Unable to quit driver");
+               logger.info("Unable to quit driver");
             }
         }
-        System.out.println("Closing Webdriver instance");
+       logger.info("Closing Webdriver instance");
         driver = null;
         actionDriver = null;
     }
