@@ -20,10 +20,13 @@ import java.util.concurrent.locks.LockSupport;
 public class BaseClass {
 
 
-
     protected static Properties prop;
-    protected static WebDriver driver;
-    private static ActionDriver actionDriver;
+    //  protected static WebDriver driver;
+    //  private static ActionDriver actionDriver;
+
+    private static ThreadLocal<WebDriver> driver = new ThreadLocal<>();
+    private static ThreadLocal<ActionDriver> actionDriver = new ThreadLocal<>();
+
     public static final Logger logger = LoggerManager.getLogger(BaseClass.class);
 
 //    public  WebDriver getDriver() {
@@ -31,25 +34,24 @@ public class BaseClass {
 //    }
 
 
-   public static WebDriver getDriver() {
-       if(driver == null){
-           System.out.println("Webdriver not initialized");
-           throw new IllegalStateException("Webdriver is not initialized");
-       }
-       return driver;
-   }
+    public static WebDriver getDriver() {
+        if (driver.get() == null) {
+            System.out.println("Webdriver not initialized");
+            throw new IllegalStateException("Webdriver is not initialized");
+        }
+        return driver.get();
+    }
 
     public static ActionDriver getActionDriver() {
-        if(actionDriver == null){
+        if (actionDriver.get() == null) {
             System.out.println("Actiondriver not initialized");
             throw new IllegalStateException("Actiondriver is not initialized");
         }
-        return actionDriver;
+        return actionDriver.get();
     }
 
 
-
-    public void setDriver(WebDriver driver) {
+    public void setDriver(ThreadLocal<WebDriver> driver) {
         this.driver = driver;
     }
 
@@ -66,32 +68,32 @@ public class BaseClass {
     public void loadConfig() throws IOException {
 
         prop = new Properties();
-        FileInputStream fis = new FileInputStream(System.getProperty("user.dir")+"/src/main/resources/config.properties");
+        FileInputStream fis = new FileInputStream(System.getProperty("user.dir") + "/src/main/resources/config.properties");
         prop.load(fis);
         logger.info("config.prop file loaded");
 
     }
 
     @BeforeMethod
-    public void setup() throws IOException{
+    public void setup() throws IOException {
 
         System.out.println("Setting up the Webdriver for : " + this.getClass().getSimpleName());
         launchBrowser();
         configureBrowser();
         staticWait(2);
         logger.info("Webdriver initiated and window maximized");
-        logger.trace("Trace message");
-        logger.error("error message");
-        logger.debug("debug message");
-        logger.fatal("fatal message");
-        logger.warn("warn message");
 
-    // Initialize the action driver only once
-        if (actionDriver == null){
-            actionDriver = new ActionDriver(driver);
-           logger.info("Action Driver instance is created");
+        // Initialize the action driver only once
+//        if (actionDriver == null){
+//            actionDriver = new ActionDriver(driver);
+//           logger.info("Action Driver instance is created");
+//
+//        }
+        // Initialize the action driver for the current thread
 
-        }
+        actionDriver.set(new ActionDriver(getDriver()));
+        logger.info("ActionDriver initialized for thread : " + Thread.currentThread().getName());
+
 
     }
 
@@ -101,10 +103,12 @@ public class BaseClass {
         String browser = prop.getProperty("browser");
 
         if (browser.equalsIgnoreCase("chrome")) {
-            driver = new ChromeDriver();
+            // driver = new ChromeDriver();
+            driver.set(new ChromeDriver());
             logger.info("Chrome driver instance is created");
         } else if (browser.equalsIgnoreCase("firefox")) {
-            driver = new FirefoxDriver();
+            // driver = new FirefoxDriver();
+            driver.set(new FirefoxDriver());
             logger.info("Firefox driver instance is created");
         } else {
             throw new IllegalArgumentException("incorrect browser selected");
@@ -115,12 +119,12 @@ public class BaseClass {
     private void configureBrowser() {
         // implicit wait
         int implicitWait = Integer.parseInt(prop.getProperty("implicitWait"));
-        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(implicitWait));
-        driver.manage().window().maximize();
+        getDriver().manage().timeouts().implicitlyWait(Duration.ofSeconds(implicitWait));
+        getDriver().manage().window().maximize();
 
         //Navigate to URL
         try {
-            driver.get(prop.getProperty("url"));
+            getDriver().get(prop.getProperty("url"));
         } catch (Exception e) {
             System.out.println("url is inaccessible");
         }
@@ -129,19 +133,21 @@ public class BaseClass {
 
     @AfterMethod
     public void tearDown() {
-        if (driver != null) {
+        if (getDriver() != null) {
             try {
-                driver.quit();
+                getDriver().quit();
             } catch (Exception e) {
-               logger.info("Unable to quit driver");
+                logger.info("Unable to quit driver");
             }
         }
-       logger.info("Closing Webdriver instance");
-        driver = null;
-        actionDriver = null;
+        logger.info("Closing Webdriver instance");
+        //driver = null;
+        // actionDriver = null;
+        driver.remove();
+        actionDriver.remove();
     }
 
-    public void staticWait(int seconds){
+    public void staticWait(int seconds) {
         LockSupport.parkNanos(TimeUnit.SECONDS.toNanos(seconds));
     }
 
